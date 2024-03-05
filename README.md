@@ -23,8 +23,16 @@ devtools::install_github("CMClark1/codforbid")
 
 ## Example
 
-An example of how to use the DO_RATIOS.R function to calculate the
-landings multiplier for a given dataset:
+Use marfispull and isdbpull functions:
+
+``` r
+library(codforbid)
+marfis <- marfispull(year=2023)
+isdb <- isdbpull(year=2023)
+```
+
+Use the DO_RATIOS function to calculate the landings multiplier for a
+given dataset:
 
 ``` r
 library(codforbid)
@@ -33,6 +41,4 @@ HAD=runif(4)
 OBS=c("N","N","Y","Y")
 df<-data.frame(COD,HAD,OBS)
 example1 <- DO_RATIOS(df)
-#>   MULTIPLIER
-#> 1 0.04432713
 ```

@@ -2,6 +2,8 @@
 
 export("%>%")
 export(DO_RATIOS)
+export(assignsector)
 export(isdbpull)
 export(marfispull)
+export(readydata)
 importFrom(magrittr,"%>%")

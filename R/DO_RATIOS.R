@@ -5,8 +5,11 @@
 #'@param had.field The field in the dataframe with the haddock landings weight values. The default is "HAD."
 #'@return a data.frame with landings multiplier
 #'@examples
+#'COD=runif(4)
+#'HAD=runif(4)
+#'OBS=c("N","N","Y","Y")
+#'df<-data.frame(COD,HAD,OBS)
 #'example1 <- DO_RATIOS(df)
-#'example2 <- DO_RATIOS(df=data,cod.field="SPECIES10", had.field="SPECIES11")
 #'@export
 
 DO_RATIOS <- function(df=NULL,cod.field="COD", had.field="HAD"){

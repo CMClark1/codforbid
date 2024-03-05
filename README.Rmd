@@ -1,0 +1,43 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# codforbid
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of codforbid is to automate the Atlantic Cod discard calculation for Georges Bank (described in Gavaris et al. 2007) as much as possible, and to make it reproducible by replacing the combination of Access, Excel, and APL applications previously used.
+
+## Installation
+
+You can install the development version of codforbid from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("CMClark1/codforbid")
+```
+
+## Example
+
+An example of how to use the DO_RATIOS.R function to calculate the landings multiplier for a given dataset: 
+
+```{r example}
+library(codforbid)
+COD=runif(4)
+HAD=runif(4)
+OBS=c("N","N","Y","Y")
+df<-data.frame(COD,HAD,OBS)
+example1 <- DO_RATIOS(df)
+```

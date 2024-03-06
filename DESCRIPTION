@@ -19,6 +19,9 @@ Imports:
     here,
     lubridate,
     magrittr,
+    Mar.data,
+    Mar.datawrangling,
+    Mar.fleets,
     Mar.utils,
     ROracle,
     tidyr

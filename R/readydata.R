@@ -124,8 +124,18 @@ isdb_check <- dplyr::full_join(isdb_check,isdb_errors)
 write.csv(marfis_missing, "~/marfis_missing.csv") #File sent to CDD to add missing trip numbers from ISDB database
 write.csv(isdb_check, "~/isdb_check.csv") #File sent to observer program to check if VRN, date landed, and trip number are correct -- or if trips entered in MARFIS are missing from the ISDB for a reason.
 
-marfis <- assignsector(marfis_qaqc)
+marfis1 <- assignsector(marfis_qaqc)
 
-print(marfis)
+marfis2 <- assignzone(marfis.df=marfis1, isdb.df=isdb, y=year) #list of two dataframes - data with zones to keep, and data without zones to remove
+
+marfis3 <- noncommercial(marfis.df=marfis2[[1]],isdb.df=isdb) #list of two dataframes - data that are commercial trips to keep, and data that are not commercial trips to remove
+
+marfis4 <- nopanel(marfis.df=marfis3[[1]], y=year) #list of two dataframes - data that use a separator panel to keep, and data that do not use a separator panel to remove
+
+marfis5 <- speciessought(marfis.df=marfis4[[1]], y=year)
+
+print(marfis5)
 
 }
+
+

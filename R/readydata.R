@@ -4,13 +4,13 @@
 #'@param username Oracle username. Default is the value oracle.username stored in .Rprofile.
 #'@param password Oracle password. Default is the value oracle.password stored in .Rprofile.
 #'@param dsn Oracle dsn. Default is the value oracle.dsn stored in .Rprofile.
-#'@param directory Directory where output files will be saved. Default is "~/" which is usually Documents.
+#'@param directory Directory where output files will be saved. Default is the working directory.
 #'@return a data frame of clean data ready for analysis
 #'@examples
 #'example1 <- isdbpull(year=2023)
 #'@export
 
-readydata <- function(year=NULL,directory="~/",username=oracle.username,password=oracle.password,dsn=oracle.dsn) {
+readydata <- function(year=NULL,directory=getwd(),username=oracle.username,password=oracle.password,dsn=oracle.dsn) {
  marfis <- marfispull(year=year)
  isdb <- isdbpull(year=year)
 
@@ -122,21 +122,31 @@ readydata <- function(year=NULL,directory="~/",username=oracle.username,password
 
 isdb_check <- dplyr::full_join(isdb_check,isdb_errors)
 
-write.csv(marfis_missing, paste(directory,"marfis_missing.csv",sep="")) #File sent to CDD to add missing trip numbers from ISDB database
-write.csv(isdb_check, paste(directory,"isdb_check.csv",sep="")) #File sent to observer program to check if VRN, date landed, and trip number are correct -- or if trips entered in MARFIS are missing from the ISDB for a reason.
+write.csv(marfis_missing, paste(directory,"/Discards_MARFIS_missing_",year,".csv",sep="")) #File sent to CDD to add missing trip numbers from ISDB database
+write.csv(isdb_check, paste(directory,"/Discards_ISDB_check_",year,".csv",sep="")) #File sent to observer program to check if VRN, date landed, and trip number are correct -- or if trips entered in MARFIS are missing from the ISDB for a reason.
 
+#Assign sector to MARFIS data
 marfis1 <- assignsector(marfis_qaqc)
 
-marfis2 <- assignzone(marfis.df=marfis1, isdb.df=isdb, y=year) #list of two dataframes - data with zones to keep, and data without zones to remove
+#Assign zone to MARFIS data. Creates a list of two dataframes - data with zones to keep, and data without zones to remove
+marfis2 <- assignzone(marfis.df=marfis1, isdb.df=isdb, y=year)
 
-marfis3 <- noncommercial(marfis.df=marfis2[[1]],isdb.df=isdb) #list of two dataframes - data that are commercial trips to keep, and data that are not commercial trips to remove
+#Identify non-commercial trips. Creates a list of two dataframes - data that are commercial trips to keep, and data that are not commercial trips to remove
+marfis3 <- noncommercial(marfis.df=marfis2[[1]],isdb.df=isdb)
 
-marfis4 <- nopanel(marfis.df=marfis3[[1]], y=year) #list of two dataframes - data that use a separator panel to keep, and data that do not use a separator panel to remove
+#Identify trips that did not use a separator panel. Creates a list of two dataframes - data that use a separator panel to keep, and data that do not use a separator panel to remove
+marfis4 <- nopanel(marfis.df=marfis3[[1]], y=year)
 
+#Identify trips that did not seek haddock. Creates a list of two dataframes - data from trips that did seek haddock to keep, and data that did not seek haddock to remove
 marfis5 <- speciessought(marfis.df=marfis4[[1]], y=year)
 
+#Create a coverage summary document, saved to working directory
+coveragesummary(marfis5[[1]])
+
+#Identify quarters/zone/fleet combinations that were 100% observed. Creates a list of two dataframes - data from quarters/zone/fleet combinations that were not 100% observed to keep, and data from quarters/zone/fleet combinations that were 100% observed to remove
 marfis6 <- obsquarters(marfis.df=marfis5[[1]])
 
+#Write csv file with all removed records
 nozone <- marfis2[[2]]%>%dplyr::select(1:23,COMMENT)
 noncom <- marfis3[[2]]%>%dplyr::select(1:23,COMMENT)
 nopan <- marfis4[[2]]%>%dplyr::select(1:23,COMMENT)
@@ -149,7 +159,18 @@ removed <- rbind(nozone,
       setNames(directed, names(nozone)),
       setNames(allobserved, names(nozone)))
 
-write.csv(removed, paste(directory,"removedrecords.csv",sep=""))
+write.csv(removed, paste(directory,"/Discards_RemovedRecords",year,".csv",sep=""))
+
+#Create and export aggregated data
+aggregated <- marfis.df %>%
+  dplyr::group_by(VR_NUMBER_FISHING, VESSEL_NAME, LICENCE_ID, TC, LC, TRIP_ID, LANDED_DATE, GEAR_CODE, Q, TRIP, ZONE, SECTOR) %>%
+  dplyr::summarize(COD = sum(as.numeric(`100`), na.rm=TRUE), HAD = sum(as.numeric(`110`), na.rm=TRUE), POL = sum(as.numeric(`170`), na.rm=TRUE)) %>%
+  dplyr::filter(!is.na(SECTOR) | !is.nan(SECTOR) | SECTOR!=Inf | SECTOR!=-Inf) %>%
+  dplyr::mutate(OBS=ifelse(is.na(TRIP), "N", "Y"))
+
+write.csv(aggregated, paste(directory, "/Discards_MARFISXtab_Aggregated",year,".csv", sep=""))
+
+#Create coverage summary
 
 print(marfis6)
 

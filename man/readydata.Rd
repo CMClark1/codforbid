@@ -6,6 +6,7 @@
 \usage{
 readydata(
   year = NULL,
+  directory = getwd(),
   username = oracle.username,
   password = oracle.password,
   dsn = oracle.dsn
@@ -13,6 +14,8 @@ readydata(
 }
 \arguments{
 \item{year}{The year required.}
+
+\item{directory}{Directory where output files will be saved. Default is the working directory.}
 
 \item{username}{Oracle username. Default is the value oracle.username stored in .Rprofile.}
 

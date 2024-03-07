@@ -4,12 +4,13 @@
 #'@param username Oracle username. Default is the value oracle.username stored in .Rprofile.
 #'@param password Oracle password. Default is the value oracle.password stored in .Rprofile.
 #'@param dsn Oracle dsn. Default is the value oracle.dsn stored in .Rprofile.
+#'@param directory Directory where output files will be saved. Default is "~/" which is usually Documents.
 #'@return a data frame of clean data ready for analysis
 #'@examples
 #'example1 <- isdbpull(year=2023)
 #'@export
 
-readydata <- function(year=NULL,username=oracle.username,password=oracle.password,dsn=oracle.dsn) {
+readydata <- function(year=NULL,directory="~/",username=oracle.username,password=oracle.password,dsn=oracle.dsn) {
  marfis <- marfispull(year=year)
  isdb <- isdbpull(year=year)
 
@@ -121,8 +122,8 @@ readydata <- function(year=NULL,username=oracle.username,password=oracle.passwor
 
 isdb_check <- dplyr::full_join(isdb_check,isdb_errors)
 
-write.csv(marfis_missing, "~/marfis_missing.csv") #File sent to CDD to add missing trip numbers from ISDB database
-write.csv(isdb_check, "~/isdb_check.csv") #File sent to observer program to check if VRN, date landed, and trip number are correct -- or if trips entered in MARFIS are missing from the ISDB for a reason.
+write.csv(marfis_missing, paste(directory,"marfis_missing.csv",sep="")) #File sent to CDD to add missing trip numbers from ISDB database
+write.csv(isdb_check, paste(directory,"isdb_check.csv",sep="")) #File sent to observer program to check if VRN, date landed, and trip number are correct -- or if trips entered in MARFIS are missing from the ISDB for a reason.
 
 marfis1 <- assignsector(marfis_qaqc)
 
@@ -134,7 +135,23 @@ marfis4 <- nopanel(marfis.df=marfis3[[1]], y=year) #list of two dataframes - dat
 
 marfis5 <- speciessought(marfis.df=marfis4[[1]], y=year)
 
-print(marfis5)
+marfis6 <- obsquarters(marfis.df=marfis5[[1]])
+
+nozone <- marfis2[[2]]%>%dplyr::select(1:23,COMMENT)
+noncom <- marfis3[[2]]%>%dplyr::select(1:23,COMMENT)
+nopan <- marfis4[[2]]%>%dplyr::select(1:23,COMMENT)
+directed <- marfis5[[2]]%>%dplyr::select(1:23,COMMENT)
+allobserved <- marfis6[[2]]%>%dplyr::select(1:23,COMMENT)
+
+removed <- rbind(nozone,
+      setNames(noncom, names(nozone)),
+      setNames(nopan, names(nozone)),
+      setNames(directed, names(nozone)),
+      setNames(allobserved, names(nozone)))
+
+write.csv(removed, paste(directory,"removedrecords.csv",sep=""))
+
+print(marfis6)
 
 }
 

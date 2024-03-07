@@ -29,15 +29,13 @@ group by a.CFV, a.VESSEL_NAME, b.TRIP, b.LANDING_DATE, c.GEARCD_ID, d.GEARFCD_ID
 ",sep=" "))
 
   marfis <- dplyr::left_join(marfis.df, separator %>%
-                               dplyr::filter(GEARFCD_ID==89) %>%
-                               dplyr::select(TRIP, GEARFCD_ID), by=c("TRIP" = "TRIP")) %>%
-            filter(is.na(GEARFCD_ID) | GEARFCD_ID != 89)
+                               dplyr::select(TRIP, GEARFCD_ID)) %>%
+            dplyr::filter(is.na(GEARFCD_ID) | GEARFCD_ID != 89)
 
   nopaneltrips <- dplyr::left_join(marfis.df, separator %>%
-                                     dplyr::filter(GEARFCD_ID==89) %>%
-                                     dplyr::select(TRIP, GEARFCD_ID), by=c("TRIP" = "TRIP")) %>%
-            filter(GEARFCD_ID == 89) %>%
-    mutate(COMMENT="DID NOT USE SEPARATOR PANEL")
+                                     dplyr::select(TRIP, GEARFCD_ID)) %>%
+            dplyr::filter(GEARFCD_ID == 89) %>%
+    dplyr::mutate(COMMENT="DID NOT USE SEPARATOR PANEL")
 
    df.list <- list(marfis,nopaneltrips)
    print(df.list)

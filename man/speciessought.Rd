@@ -24,10 +24,10 @@ speciessought(
 \item{y}{Year}
 }
 \value{
-a list of two dataframes: one with trips that sought cod or haddock or keep; another with trips that did not seek cod or haddock to remove
+a list of two data.frames: one with trips that sought haddock to keep; another with trips that sought other species to remove.
 }
 \description{
-Remove trips that did not seek cod or haddock
+Remove trips that sought species other than haddock, and then remove
 }
 \examples{
 example1 <- speciessought(marfis.df=marfis)

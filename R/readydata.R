@@ -5,7 +5,7 @@
 #'@param password Oracle password. Default is the value oracle.password stored in .Rprofile.
 #'@param dsn Oracle dsn. Default is the value oracle.dsn stored in .Rprofile.
 #'@param directory Directory where output files will be saved. Default is the working directory.
-#'@return a data frame of clean data ready for analysis
+#'@return a data frame of clean, aggregated data ready for analysis, and five Excel or .csv files for review or action: Discards_ISDB_check to send to the observer companies, Discards_MARFIS_missing to send to CDD, an observer coverage summary (Discards_ObsCoverageSummary), removed records (Discards_RemovedRecords), aggregated data (Discards_MARFISXtab_Aggregated) and data for grouping (Discards_DataforGRouping).
 #'@examples
 #'example1 <- isdbpull(year=2023)
 #'@export
@@ -162,7 +162,7 @@ removed <- rbind(nozone,
 write.csv(removed, paste(directory,"/Discards_RemovedRecords",year,".csv",sep=""))
 
 #Create and export aggregated data
-aggregated <- marfis.df %>%
+aggregated <- marfis5[[1]] %>%
   dplyr::group_by(VR_NUMBER_FISHING, VESSEL_NAME, LICENCE_ID, TC, LC, TRIP_ID, LANDED_DATE, GEAR_CODE, Q, TRIP, ZONE, SECTOR) %>%
   dplyr::summarize(COD = sum(as.numeric(`100`), na.rm=TRUE), HAD = sum(as.numeric(`110`), na.rm=TRUE), POL = sum(as.numeric(`170`), na.rm=TRUE)) %>%
   dplyr::filter(!is.na(SECTOR) | !is.nan(SECTOR) | SECTOR!=Inf | SECTOR!=-Inf) %>%
@@ -170,9 +170,24 @@ aggregated <- marfis.df %>%
 
 write.csv(aggregated, paste(directory, "/Discards_MARFISXtab_Aggregated",year,".csv", sep=""))
 
-#Create coverage summary
+#Step 12c. Group aggregated data for analysis based on conditions
+#This part of the script groups by sector (fishery), zone, and quarter.
 
-print(marfis6)
+forgroups <- aggregated %>%
+  dplyr::group_by (SECTOR, ZONE, Q) %>%
+  dplyr::mutate(OBS = 1) %>%
+  dplyr::summarise(UNOBS = sum(OBS[is.na(TRIP)]), OBS = sum(OBS[!is.na(TRIP)])) %>%
+  dplyr::mutate(COVERAGE =OBS/(UNOBS + OBS)) %>%
+  dplyr::mutate(DGROUP=dplyr::case_when(COVERAGE==1 ~ 1, #100% observed
+                                        COVERAGE>0.2 & COVERAGE<1 ~ 2, #good to go
+                                        COVERAGE<0.2 ~ 3)) #needs a friend
+
+#file to help figure out the different groupings. Turned into xlsx to colour code and make the initial groupings
+write.csv(forgroups, paste(directory, "/Discards_DataforGrouping_",year,".csv", sep=""))
+
+#Group fleets-zone-quarter according to amount of data present
+
+print(aggregated)
 
 }
 

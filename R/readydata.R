@@ -141,7 +141,7 @@ marfis4 <- nopanel(marfis.df=marfis3[[1]], y=year)
 marfis5 <- speciessought(marfis.df=marfis4[[1]], y=year)
 
 #Create a coverage summary document, saved to working directory
-coveragesummary(marfis5[[1]])
+coveragesummary(marfis5[[1]],y=year)
 
 #Identify quarters/zone/fleet combinations that were 100% observed. Creates a list of two dataframes - data from quarters/zone/fleet combinations that were not 100% observed to keep, and data from quarters/zone/fleet combinations that were 100% observed to remove
 marfis6 <- obsquarters(marfis.df=marfis5[[1]])
@@ -166,7 +166,9 @@ aggregated <- marfis5[[1]] %>%
   dplyr::group_by(VR_NUMBER_FISHING, VESSEL_NAME, LICENCE_ID, TC, LC, TRIP_ID, LANDED_DATE, GEAR_CODE, Q, TRIP, ZONE, SECTOR) %>%
   dplyr::summarize(COD = sum(as.numeric(`100`), na.rm=TRUE), HAD = sum(as.numeric(`110`), na.rm=TRUE), POL = sum(as.numeric(`170`), na.rm=TRUE)) %>%
   dplyr::filter(!is.na(SECTOR) | !is.nan(SECTOR) | SECTOR!=Inf | SECTOR!=-Inf) %>%
-  dplyr::mutate(OBS=ifelse(is.na(TRIP), "N", "Y"))
+  dplyr::mutate(OBS=ifelse(is.na(TRIP), "N", "Y"),
+                Q=as.integer(Q),
+                ZONE=as.integer(ZONE))
 
 write.csv(aggregated, paste(directory, "/Discards_MARFISXtab_Aggregated",year,".csv", sep=""))
 
@@ -178,9 +180,9 @@ forgroups <- aggregated %>%
   dplyr::mutate(OBS = 1) %>%
   dplyr::summarise(UNOBS = sum(OBS[is.na(TRIP)]), OBS = sum(OBS[!is.na(TRIP)])) %>%
   dplyr::mutate(COVERAGE =OBS/(UNOBS + OBS)) %>%
-  dplyr::mutate(DGROUP=dplyr::case_when(COVERAGE==1 ~ 1, #100% observed
-                                        COVERAGE>0.2 & COVERAGE<1 ~ 2, #good to go
-                                        COVERAGE<0.2 ~ 3)) #needs a friend
+  dplyr::filter(COVERAGE!=1) %>% #Remove fully observed
+  dplyr::mutate(DGROUP=dplyr::case_when(COVERAGE>0.2 & COVERAGE<1 ~ 1, #good to go
+                                        COVERAGE<0.2 ~ 2)) #needs a friend
 
 #file to help figure out the different groupings. Turned into xlsx to colour code and make the initial groupings
 write.csv(forgroups, paste(directory, "/Discards_DataforGrouping_",year,".csv", sep=""))

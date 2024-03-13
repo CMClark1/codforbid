@@ -24,7 +24,7 @@ readydata(
 \item{dsn}{Oracle dsn. Default is the value oracle.dsn stored in .Rprofile.}
 }
 \value{
-a data frame of clean data ready for analysis
+a data frame of clean, aggregated data ready for analysis, and five Excel or .csv files for review or action: Discards_ISDB_check to send to the observer companies, Discards_MARFIS_missing to send to CDD, an observer coverage summary (Discards_ObsCoverageSummary), removed records (Discards_RemovedRecords), aggregated data (Discards_MARFISXtab_Aggregated) and data for grouping (Discards_DataforGRouping).
 }
 \description{
 A function to pull raw data, clean it, and QAQC it. After, it is ready for analysis.

@@ -9,7 +9,6 @@
 #'df<-data.frame(COD,HAD,OBS)
 #'example1 <- DO_RATIOS(df)
 #'@export
-#'
 
 DO_RATIOS <- function(df=NULL){
   stopifnot(is.data.frame(df),length(df)>1)

@@ -42,7 +42,7 @@ fleetqz_allobs <- fleetqz_summary %>% dplyr::filter(COVERAGE==1)
 
 #Export coverage summary as an excel document
 
-wbName <- paste0("Discards_ObsCoverageSummary_",y,".xlsx",sep="")
+wbName <- paste0("Discards_ObsCoverageSummary_",Sys.Date(),".xlsx",sep="")
 
 wb<-openxlsx::createWorkbook(title="Observer Coverage Summary")
 sheet1 <- openxlsx::addWorksheet(wb, sheetName = "FLEET SUMMARY")

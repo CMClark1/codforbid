@@ -45,7 +45,7 @@ test1 <- marfis.df %>% dplyr::mutate(`100` = tidyr::replace_na(`100`, 0),
 
 coddirected1 <- marfis.df %>% dplyr::filter(TRIP_ID%in%test1$TRIP_ID)
 
-#Identify trips where sets at the end of the trip had a cod:had ratio greater than 0.8 (i.e. sought cod at the end of the trip)
+#Identify trips where sets at the end of the trip had a cod:had ratio greater than 0.8 (i.e. sought cod at the end of the trip). Sets with ratio >0.8 are cod directed on these trips.
 
 coddirected2 <-marfis.df %>% dplyr::mutate(`100` = tidyr::replace_na(`100`, 0),
                             `110` = tidyr::replace_na(`110`, 0),
@@ -60,7 +60,8 @@ coddirected2 <-marfis.df %>% dplyr::mutate(`100` = tidyr::replace_na(`100`, 0),
   dplyr::arrange(LOG_EFRT_STD_INFO_ID) %>%
   dplyr::mutate(test2=dplyr::case_when(dplyr::first(test)==0 & dplyr::last(test)==1 ~ 1)) %>%
   dplyr::filter(test2==1) %>% #include only trips with last set >0.8 greater than first set <0.8
-  dplyr::select(-c(test,test2))
+  dplyr::select(-c(test,test2))%>%
+  dplyr::filter(codhad_ratio>0.8)
 
 #Identify sets where pollock landings are greater than combined cod and haddock landings (i.e. sought pollock)
 
@@ -84,7 +85,7 @@ directed <- rbind(noncodhad%>%
                     dplyr::select(1:23) %>%
                     dplyr::mutate(COMMENT="POLLOCK DIRECTED"))
 
-marfis <- dplyr::anti_join(marfis.df, directed, by = c("VR_NUMBER_FISHING","TRIP_ID","LANDED_DATE","DATE_FISHED","100","110","170"))
+marfis <- dplyr::anti_join(marfis.df, directed%>%dplyr::distinct(), by = c("VR_NUMBER_FISHING","TRIP_ID","LANDED_DATE","DATE_FISHED","100","110","170"))
 
 df.list <- list(marfis,directed)
 print(df.list)

@@ -5,7 +5,7 @@
 \title{readydata}
 \usage{
 readydata(
-  year = NULL,
+  year = as.numeric(substr(Sys.Date(), 1, 4)) - 1,
   directory = getwd(),
   username = oracle.username,
   password = oracle.password,
@@ -13,7 +13,7 @@ readydata(
 )
 }
 \arguments{
-\item{year}{The year required.}
+\item{year}{The year required. Default is the previous year (current system year minus one).}
 
 \item{directory}{Directory where output files will be saved. Default is the working directory.}
 

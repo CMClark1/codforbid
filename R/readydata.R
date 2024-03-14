@@ -1,6 +1,6 @@
 #'@title readydata
 #'@description A function to pull raw data, clean it, and QAQC it. After, it is ready for analysis.
-#'@param year The year required.
+#'@param year The year required. Default is the previous year (current system year minus one).
 #'@param username Oracle username. Default is the value oracle.username stored in .Rprofile.
 #'@param password Oracle password. Default is the value oracle.password stored in .Rprofile.
 #'@param dsn Oracle dsn. Default is the value oracle.dsn stored in .Rprofile.
@@ -10,7 +10,7 @@
 #'example1 <- isdbpull(year=2023)
 #'@export
 
-readydata <- function(year=NULL,directory=getwd(),username=oracle.username,password=oracle.password,dsn=oracle.dsn) {
+readydata <- function(year=as.numeric(substr(Sys.Date(),1,4))-1,directory=getwd(),username=oracle.username,password=oracle.password,dsn=oracle.dsn) {
  marfis <- marfispull(year=year)
  isdb <- isdbpull(year=year)
 
@@ -122,8 +122,8 @@ readydata <- function(year=NULL,directory=getwd(),username=oracle.username,passw
 
 isdb_check <- dplyr::full_join(isdb_check,isdb_errors)
 
-write.csv(marfis_missing, paste(directory,"/Discards_MARFIS_missing_",year,".csv",sep="")) #File sent to CDD to add missing trip numbers from ISDB database
-write.csv(isdb_check, paste(directory,"/Discards_ISDB_check_",year,".csv",sep="")) #File sent to observer program to check if VRN, date landed, and trip number are correct -- or if trips entered in MARFIS are missing from the ISDB for a reason.
+write.csv(marfis_missing, paste(directory,"/Discards_MARFIS_missing_",Sys.Date(),".csv",sep="")) #File sent to CDD to add missing trip numbers from ISDB database
+write.csv(isdb_check, paste(directory,"/Discards_ISDB_check_",Sys.Date(),".csv",sep="")) #File sent to observer program to check if VRN, date landed, and trip number are correct -- or if trips entered in MARFIS are missing from the ISDB for a reason.
 
 #Assign sector to MARFIS data
 marfis1 <- assignsector(marfis_qaqc)
@@ -159,7 +159,7 @@ removed <- rbind(nozone,
       setNames(directed, names(nozone)),
       setNames(allobserved, names(nozone)))
 
-write.csv(removed, paste(directory,"/Discards_RemovedRecords",year,".csv",sep=""))
+write.csv(removed, paste(directory,"/Discards_RemovedRecords_",Sys.Date(),".csv",sep=""))
 
 #Create and export aggregated data
 aggregated <- marfis5[[1]] %>%
@@ -170,7 +170,7 @@ aggregated <- marfis5[[1]] %>%
                 Q=as.integer(Q),
                 ZONE=as.integer(ZONE))
 
-write.csv(aggregated, paste(directory, "/Discards_MARFISXtab_Aggregated",year,".csv", sep=""))
+write.csv(aggregated, paste(directory, "/Discards_MARFISXtab_Aggregated_",Sys.Date(),".csv", sep=""))
 
 #Step 12c. Group aggregated data for analysis based on conditions
 #This part of the script groups by sector (fishery), zone, and quarter.
@@ -185,7 +185,7 @@ forgroups <- aggregated %>%
                                         COVERAGE<0.2 ~ 2)) #needs a friend
 
 #file to help figure out the different groupings. Turned into xlsx to colour code and make the initial groupings
-write.csv(forgroups, paste(directory, "/Discards_DataforGrouping_",year,".csv", sep=""))
+write.csv(forgroups, paste(directory, "/Discards_DataforGrouping_",Sys.Date(),".csv", sep=""))
 
 #Group fleets-zone-quarter according to amount of data present
 

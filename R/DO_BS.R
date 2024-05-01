@@ -11,7 +11,7 @@
 #'@export
 #'
 
-DO_BS <- function(data=ready,file="Discards_GroupedData2022.csv",nboot=1000){
+DO_BS <- function(data=ready,file="Discards_GroupedData.csv",nboot=1000){
 
   grouped<-read.csv(file)
   data<-dplyr::left_join(data,grouped%>%dplyr::select(-X,-DGROUP,-COVERAGE,-OBS,-UNOBS))

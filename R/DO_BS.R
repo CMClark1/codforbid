@@ -11,10 +11,10 @@
 #'@export
 #'
 
-DO_BS <- function(data=ready,file="Discards_GroupedData.csv",nboot=1000){
+DO_BS <- function(data=ready,file="Discards_GroupedData2022.csv",nboot=1000){
 
   grouped<-read.csv(file)
-  data<-dplyr::full_join(data,grouped%>%dplyr::select(-X,-DGROUP,-COVERAGE,-OBS,-UNOBS))
+  data<-dplyr::left_join(data,grouped%>%dplyr::select(-X,-DGROUP,-COVERAGE,-OBS,-UNOBS))
 
   data=data%>%
     dplyr::filter(!is.na(GROUP), GROUP!="excluded") %>%
@@ -24,8 +24,11 @@ DO_BS <- function(data=ready,file="Discards_GroupedData.csv",nboot=1000){
     dplyr::select(GROUP,COD,HAD,OBS)
 
   allmults <- data.frame()
+  percout<-data.frame()
 
-  for (g in unique(data$GROUP)) {
+  df<-data.frame()
+
+  for (g in unique(data$GROUP)) { #bootstrap the multiplier and calculate percentiles for each group, and append all groups together
 
     ready <- data %>% dplyr::filter(GROUP==g)
 
@@ -40,45 +43,52 @@ DO_BS <- function(data=ready,file="Discards_GroupedData.csv",nboot=1000){
     mult_g_df <- data.frame(GROUP=g, MULT=mult_g)
     allmults <- rbind(allmults,mult_g_df)
 
+    dat.samp<-mult_g_df%>%arrange(MULT)
+    dat.samp$ID<-seq.int(nrow(dat.samp))
+    dat.samp<-dat.samp%>%mutate(alpha=dat.samp$ID/nboot,
+                                zalpha=qnorm(alpha,mean=0,sd=1))
+    dat.samp$ID<-seq.int(nrow(dat.samp))
+    dat.samp<-dat.samp%>%mutate(alpha=dat.samp$ID/nboot,
+                                zalpha=qnorm(alpha,mean=0,sd=1))
+
+    output<-data.frame(MULT=NA, omega=NA) #Create structure for loop output
+
+    for (j in unique((dat.samp$MULT))){ #Loop
+      temp<-subset(dat.samp, MULT<=j)
+      omg<-nrow(temp)/nboot
+      temp2<-data.frame(MULT=j, omega=omg)
+      output<-rbind(output, temp2)
+      output<-subset(output, !is.na(MULT))
+    }
+
+    dat.samp<-merge(dat.samp, output, all.x=TRUE) #Merge loop output into original
+
+    dat.samp$z0 <- qnorm(dat.samp$omega,mean=0,sd=1)
+    dat.samp$phibias <- pnorm((2*dat.samp$z0)+dat.samp$zalpha,0,1)
+    dat.samp$phibias2 <- qnorm(dat.samp$phibias,0,1)
+    dat.samp$phinobias <- pnorm((dat.samp$zalpha),0,1)
+    dat.samp$phinobias2 <- qnorm(dat.samp$phinobias,0,1)
+
+    output2<-data.frame(group=g,prob=seq(0.001,0.99,by=0.001))
+    output2$perc <- quantile(dat.samp$phinobias2,seq(0.001,0.99,by=0.001),na.rm=TRUE)
+    output2$bcperc <- quantile(dat.samp$phibias2,seq(0.001, 0.99, by=0.001),na.rm=TRUE)
+      df<-rbind(df, output2)
   }
 
   result1 <- allmults %>%
-    dplyr::filter(!is.nan(MULT) & !is.na(MULT))%>%
+    dplyr::filter(MULT>=0)%>%
     dplyr::group_by(GROUP) %>%
     dplyr::mutate(actual=MULT,predicted=mean(MULT)) %>%
-    dplyr::summarise(MULT2=mean(MULT),
+    dplyr::summarise(MEANMULT=mean(MULT),
                      VAR=var(MULT),
                      BIAS=Metrics::bias(MULT,predicted))
 
-  GROUP <- unique(allmults$GROUP)
-  PROB <- seq(0.001,1,0.001)
-  GROUP2 <- data.frame(GROUP2=sort(rep(GROUP,length(PROB))),PROB2=rep(PROB,length(GROUP)))
+  df2<-df%>%
+    dplyr::left_join(result1%>%select(GROUP,MEANMULT)%>%
+                       dplyr::rename(group=GROUP))%>%
+    dplyr::mutate(perc2=perc*MEANMULT, bcperc2=bcperc*MEANMULT)
 
-df_total = data.frame()
-for (i in PROB){
-  dat <- allmults %>%
-      dplyr::group_by(GROUP) %>%
-      dplyr::filter(!is.na(MULT),!is.nan(MULT),MULT!=Inf,MULT!=-Inf)%>%
-      dplyr::filter(MULT<i) %>%
-      dplyr::tally()%>%
-      dplyr::mutate(prob=i,
-                    perc=(n/nboot)*100)%>%
-      dplyr::select(-n)
-  df <- data.frame(dat)
-  df_total <- rbind(df_total,df)
-}
-
-ggplot2::ggplot(data=df_total, ggplot2::aes(x=perc,y=prob))+ggplot2::geom_path()+ggplot2::facet_wrap(GROUP~., scales="free")+ggplot2::geom_vline(ggplot2::aes(xintercept=1))
-
-GROUP <- data.frame(GROUP=GROUP)
-significance <- GROUP %>%
-  dplyr::left_join(df_total%>%dplyr::filter(prob==0.05)%>%dplyr::select(-prob)) %>% dplyr::mutate(PERC=ifelse(is.na(perc),0,perc),BCPERC=NA,SIGNIFICANT=ifelse(PERC>1,"YES","NO")) %>% dplyr::select(-perc)
-
-landings <- data %>%group_by(GROUP,OBS)%>%summarise(COD=sum(COD))%>%tidyr::pivot_wider(id_cols=GROUP, names_from=OBS, values_from=COD) %>% rename(OBS=Y,UNOBS=N)
-
-results <- dplyr::full_join(result1,significance) %>% dplyr::left_join(landings) %>%
-  dplyr::mutate(SIGDISC=ifelse(SIGNIFICANT=="YES" & MULT2>1,(MULT2*UNOBS)-UNOBS,0))
-
-  print(results)
+  print(df2)
 
 }
+

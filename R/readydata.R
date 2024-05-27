@@ -11,7 +11,7 @@
 #'example1 <- isdbpull(year=2023)
 #'@export
 
-readydata2 <- function(year=as.numeric(substr(Sys.Date(),1,4))-1,directory=getwd(),username=oracle.username,password=oracle.password,dsn=oracle.dsn,savedoutput="T") {
+readydata <- function(year=as.numeric(substr(Sys.Date(),1,4))-1,directory=getwd(),username=oracle.username,password=oracle.password,dsn=oracle.dsn,savedoutput="T") {
   marfis <- marfispull(year=year)
   isdb <- isdbpull(year=year)
 

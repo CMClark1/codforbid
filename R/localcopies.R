@@ -30,4 +30,3 @@ localcopies <- function(year=NULL,dir="C:/LocalDataDump", username=oracle.userna
   saveRDS(fixedVMSRaw, paste(dir,"/fixed_5Z_VMS_",year,".rds",sep=""))
 
 }
-
